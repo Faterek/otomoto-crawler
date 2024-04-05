@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass, asdict
 from typing import List
 import csv
-
+import traceback
 
 @dataclass
 class Car:
@@ -14,7 +14,40 @@ class Car:
     mileage_km: str
     engine_capacity: str
     fuel_type: str
+    horsepower: str
     price_pln: int
+
+
+
+##### Configuration #####
+
+# URL to scrape - example:
+# from "https://www.otomoto.pl/osobowe/uzywane/dodge/charger/od-2015?page=5&search%5Badvanced_search_expanded%5D=true" get only "uzywane/dodge/charger/od-2015"
+url_to_scrape = "uzywane/dodge/charger/od-2015"
+
+# Number of pages to scrape
+# get it from the website from bottom of the page
+number_of_pages_to_scrape = 5
+
+element_of_offer_table = "div"
+class_of_offer_table = "ooa-r53y0q ezh3mkl11"
+
+element_of_cars = "article"
+class_of_cars = "ooa-yca59n emjt7sh0"
+
+element_of_stats_block = "p"
+class_of_stats_block = "emjt7sh10 ooa-1tku07r er34gjf0"
+
+element_of_car_title = "h1"
+class_of_car_title = "emjt7sh9 ooa-1ed90th er34gjf0"
+
+element_of_all_data = "dd"
+
+element_of_price = "h3"
+class_of_price = "emjt7sh16 ooa-1n2paoq er34gjf0"
+
+#########################
+
 
 
 class OtomotoScraper:
@@ -53,47 +86,38 @@ class OtomotoScraper:
             return []
 
     def extract_cars_from_page(self, soup: BeautifulSoup) -> List[Car]:
-        offers_table = soup.find("div", class_="offers list")
-        cars = offers_table.find_all("article")
+        offers_table = soup.find(element_of_offer_table, class_=class_of_offer_table)
+        cars = offers_table.find_all(element_of_cars, class_=class_of_cars)
         list_of_cars = []
         for car in cars:
             try:
-                link = (
-                    car.find("h2", class_="offer-title")
-                    .find("a", href=True)
-                    .get("href")
-                )
-                full_name = (
-                    car.find("h2", class_="offer-title")
-                    .find("a", href=True)
-                    .get("title")
-                )
-                description = car.find(
-                    "h3", class_="offer-item__subtitle ds-title-complement hidden-xs"
-                ).text
-                year = (
-                    car.find("ul", class_="ds-params-block")
-                    .find(attrs={"data-code": "year"})
-                    .text.strip()
-                )
-                mileage_km = (
-                    car.find("ul", class_="ds-params-block")
-                    .find(attrs={"data-code": "mileage"})
-                    .text.strip()
-                )
-                engine_capacity = (
-                    car.find("ul", class_="ds-params-block")
-                    .find(attrs={"data-code": "engine_capacity"})
-                    .text.strip()
-                )
-                fuel_type = (
-                    car.find("ul", class_="ds-params-block")
-                    .find(attrs={"data-code": "fuel_type"})
-                    .text.strip()
-                )
-                price_pln = car.find(
-                    "span", class_="offer-price__number ds-price-number"
-                ).span.text
+                stats_block = car.find(element_of_stats_block, class_=class_of_stats_block).text.split("•")
+
+                car_title = car.find(element_of_car_title, class_=class_of_car_title).a
+                
+                link = car_title.get("href")
+
+                full_name = car_title.text
+
+                if len(stats_block) == 3 :
+                    description = stats_block[2].strip()
+                else:
+                    description = "No description"
+            
+                engine_capacity = stats_block[0].strip()
+
+                horsepower = stats_block[1].strip()
+               
+                all_data = car.find_all(element_of_all_data)
+
+                year = all_data[3].text.strip()
+  
+                mileage_km = all_data[0].text.strip()
+
+                fuel_type = all_data[1].text.strip()
+
+                price_pln = car.find(element_of_price, class_=class_of_price).text.replace(" ", "")
+
                 list_of_cars.append(
                     Car(
                         link=link,
@@ -103,11 +127,12 @@ class OtomotoScraper:
                         mileage_km=mileage_km,
                         engine_capacity=engine_capacity,
                         fuel_type=fuel_type,
+                        horsepower=horsepower,
                         price_pln=price_pln,
                     )
                 )
-            except Exception as e:
-                print(f"Error msg: {e}")
+            except:
+                print(traceback.format_exc())
         return list_of_cars
 
 
@@ -121,6 +146,7 @@ def write_to_csv(cars: List[Car]) -> None:
             "mileage_km",
             "engine_capacity",
             "fuel_type",
+            "horsepower",
             "price_pln",
         ]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -130,9 +156,8 @@ def write_to_csv(cars: List[Car]) -> None:
 
 
 def scrape_otomoto() -> None:
-    make = "bmw"
-    scraper = OtomotoScraper(make)
-    cars = scraper.scrape_pages(3)
+    scraper = OtomotoScraper(url_to_scrape)
+    cars = scraper.scrape_pages(number_of_pages_to_scrape)
     write_to_csv(cars)
 
 

@@ -1,15 +1,18 @@
-# otomoto-crawler
-A simple scraper for a car auction website Otomoto.pl <br>
-YouTube link: https://youtu.be/GSLxJZswoX0
+# Otomoto crawler
+
+A simple scraper for a car auction website Otomoto.pl
+
+Forked from https://github.com/jakobowsky/otomoto-crawler and modified to work with new Otomoto website.
+YouTube link to original viedo: https://youtu.be/GSLxJZswoX0
 
 ## Setup
-```
-pipenv install
-pipenv shell
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## Running Script
 
-```buildoutcfg
+```bash
 python crawler.py
 ```
