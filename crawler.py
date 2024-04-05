@@ -4,6 +4,7 @@ from dataclasses import dataclass, asdict
 from typing import List
 import csv
 import traceback
+import datetime
 
 @dataclass
 class Car:
@@ -45,6 +46,10 @@ element_of_all_data = "dd"
 
 element_of_price = "h3"
 class_of_price = "emjt7sh16 ooa-1n2paoq er34gjf0"
+
+# add to the end of the file name current date and time
+
+output_file_name = "cars_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".csv"
 
 #########################
 
@@ -137,7 +142,7 @@ class OtomotoScraper:
 
 
 def write_to_csv(cars: List[Car]) -> None:
-    with open("cars.csv", mode="w") as f:
+    with open(output_file_name, mode="w") as f:
         fieldnames = [
             "link",
             "full_name",

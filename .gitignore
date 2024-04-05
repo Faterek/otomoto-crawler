@@ -131,5 +131,5 @@ dmypy.json
 .vscode/
 .idea/
 
-cars.csv
+*.csv
 .python-version
