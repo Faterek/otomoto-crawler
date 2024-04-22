@@ -96,7 +96,6 @@ class OtomotoScraper:
 
     def extract_cars_from_page(self, soup: BeautifulSoup) -> List[Car]:
         offers_table = soup.find(element_of_offer_table, class_=class_of_offer_table)
-        print(f'Offers table: {offers_table}')
         cars = offers_table.find_all(element_of_cars, class_=class_of_cars)
         list_of_cars = []
         for car in cars:
