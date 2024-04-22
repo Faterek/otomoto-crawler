@@ -1,3 +1,4 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 from dataclasses import dataclass, asdict
@@ -33,19 +34,21 @@ number_of_pages_to_scrape = 5
 element_of_offer_table = "div"
 class_of_offer_table = "ooa-r53y0q ezh3mkl11"
 
-element_of_cars = "article"
-class_of_cars = "ooa-yca59n emjt7sh0"
+element_of_cars = "section"
+class_of_cars = "ooa-10gfd0w e1i3khom1"
 
 element_of_stats_block = "p"
-class_of_stats_block = "emjt7sh10 ooa-1tku07r er34gjf0"
+class_of_stats_block = "e1i3khom10 ooa-1tku07r er34gjf0"
 
 element_of_car_title = "h1"
-class_of_car_title = "emjt7sh9 ooa-1ed90th er34gjf0"
+class_of_car_title = "e1i3khom9 ooa-1ed90th er34gjf0"
 
 element_of_all_data = "dd"
 
 element_of_price = "h3"
-class_of_price = "emjt7sh16 ooa-1n2paoq er34gjf0"
+class_of_price = "e1i3khom16 ooa-1n2paoq er34gjf0"
+
+additional_parameters = "&search[filter_enum_damaged]=0"
 
 # add to the end of the file name current date and time
 
@@ -58,13 +61,13 @@ output_file_name = "cars_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S
 class OtomotoScraper:
     def __init__(self, car_make: str) -> None:
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) "
-            "AppleWebKit/537.11 (KHTML, like Gecko) "
-            "Chrome/23.0.1271.64 Safari/537.11",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) "
+            "Gecko/20100101 "
+            "Firefox/115.0",
+            "Accept": "application/json, text/plain, */*",
             "Accept-Charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
             "Accept-Encoding": "none",
-            "Accept-Language": "en-US,en;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
             "Connection": "keep-alive",
         }
         self.car_make = car_make
@@ -74,7 +77,8 @@ class OtomotoScraper:
     def scrape_pages(self, number_of_pages: int) -> List[Car]:
         cars = []
         for i in range(1, number_of_pages + 1):
-            current_website = f"{self.website}/{self.car_make}/?page={i}"
+            current_website = f"{self.website}/{self.car_make}/?page={i}{additional_parameters}"
+            if os.getenv("DEBUG") == "True": open(f'page_{i}.html', 'w').write(current_website)
             new_cars = self.scrape_cars_from_current_page(current_website)
             if new_cars:
                 cars += new_cars
@@ -92,17 +96,22 @@ class OtomotoScraper:
 
     def extract_cars_from_page(self, soup: BeautifulSoup) -> List[Car]:
         offers_table = soup.find(element_of_offer_table, class_=class_of_offer_table)
+        print(f'Offers table: {offers_table}')
         cars = offers_table.find_all(element_of_cars, class_=class_of_cars)
         list_of_cars = []
         for car in cars:
             try:
                 stats_block = car.find(element_of_stats_block, class_=class_of_stats_block).text.split("•")
+                if os.getenv("DEBUG") == "True": print(f'Stats block: {stats_block}')
 
                 car_title = car.find(element_of_car_title, class_=class_of_car_title).a
+                if os.getenv("DEBUG") == "True": print(f'Car title: {car_title}')
                 
                 link = car_title.get("href")
+                if os.getenv("DEBUG") == "True": print(f'Link: {link}')
 
                 full_name = car_title.text
+                if os.getenv("DEBUG") == "True": print(f'Full name: {full_name}')
 
                 if len(stats_block) == 3 :
                     description = stats_block[2].strip()
@@ -114,6 +123,7 @@ class OtomotoScraper:
                 horsepower = stats_block[1].strip()
                
                 all_data = car.find_all(element_of_all_data)
+                if os.getenv("DEBUG") == "True": print(f'All data: {all_data}')
 
                 year = all_data[3].text.strip()
   
@@ -122,6 +132,7 @@ class OtomotoScraper:
                 fuel_type = all_data[1].text.strip()
 
                 price_pln = car.find(element_of_price, class_=class_of_price).text.replace(" ", "")
+                if os.getenv("DEBUG") == "True": print(f'Price: {price_pln}')
 
                 list_of_cars.append(
                     Car(
